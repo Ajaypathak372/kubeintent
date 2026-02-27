@@ -1,0 +1,15 @@
+apiVersion: kubeintent.io/v1alpha1
+kind: NamespaceIntent
+metadata:
+  name: default-guardrails
+  namespace: default
+spec:
+  priority: 100
+  policy:
+    securityTier: hardened
+    maxMonthlyCostUSD: 1500
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 12
+      cpuUtilizationTargetPct: 70

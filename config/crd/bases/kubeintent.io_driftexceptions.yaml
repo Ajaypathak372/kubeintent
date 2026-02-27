@@ -1,0 +1,36 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: driftexceptions.kubeintent.io
+spec:
+  group: kubeintent.io
+  names:
+    kind: DriftException
+    listKind: DriftExceptionList
+    plural: driftexceptions
+    singular: driftexception
+    shortNames: [de]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [appIntentRef, expiresAt, fields, reason]
+              properties:
+                appIntentRef:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+                fields:
+                  type: array
+                  items:
+                    type: string
+                reason:
+                  type: string

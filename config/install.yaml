@@ -1,0 +1,295 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: appintents.kubeintent.io
+spec:
+  group: kubeintent.io
+  names:
+    kind: AppIntent
+    listKind: AppIntentList
+    plural: appintents
+    singular: appintent
+    shortNames: [ai]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [targetRef, policy]
+              properties:
+                targetRef:
+                  type: object
+                  required: [apiVersion, kind, name]
+                  properties:
+                    apiVersion: { type: string }
+                    kind: { type: string }
+                    name: { type: string }
+                runtimeProfileRef:
+                  type: string
+                policy:
+                  type: object
+                  properties:
+                    availability:
+                      type: string
+                      enum: [bronze, silver, gold]
+                    latencyTargetMs:
+                      type: integer
+                      minimum: 1
+                    maxMonthlyCostUSD:
+                      type: number
+                      minimum: 0
+                    securityTier:
+                      type: string
+                      enum: [baseline, hardened, strict]
+                    autoscaling:
+                      type: object
+                      properties:
+                        enabled: { type: boolean }
+                        minReplicas: { type: integer, minimum: 1 }
+                        maxReplicas: { type: integer, minimum: 1 }
+                        cpuUtilizationTargetPct:
+                          type: integer
+                          minimum: 1
+                          maximum: 100
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                  format: int64
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: [type, status, reason, message, lastTransitionTime]
+                    properties:
+                      type: { type: string }
+                      status: { type: string }
+                      reason: { type: string }
+                      message: { type: string }
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Target
+          type: string
+          jsonPath: .spec.targetRef.name
+        - name: Availability
+          type: string
+          jsonPath: .spec.policy.availability
+        - name: Security
+          type: string
+          jsonPath: .spec.policy.securityTier
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: runtimeprofiles.kubeintent.io
+spec:
+  group: kubeintent.io
+  names:
+    kind: RuntimeProfile
+    listKind: RuntimeProfileList
+    plural: runtimeprofiles
+    singular: runtimeprofile
+    shortNames: [rp]
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                defaults:
+                  type: object
+                  properties:
+                    availability: { type: string, enum: [bronze, silver, gold] }
+                    securityTier: { type: string, enum: [baseline, hardened, strict] }
+                    autoscaling:
+                      type: object
+                      properties:
+                        enabled: { type: boolean }
+                        minReplicas: { type: integer, minimum: 1 }
+                        maxReplicas: { type: integer, minimum: 1 }
+                        cpuUtilizationTargetPct:
+                          type: integer
+                          minimum: 1
+                          maximum: 100
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: namespaceintents.kubeintent.io
+spec:
+  group: kubeintent.io
+  names:
+    kind: NamespaceIntent
+    listKind: NamespaceIntentList
+    plural: namespaceintents
+    singular: namespaceintent
+    shortNames: [ni]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                priority:
+                  type: integer
+                policy:
+                  type: object
+                  properties:
+                    availability: { type: string, enum: [bronze, silver, gold] }
+                    securityTier: { type: string, enum: [baseline, hardened, strict] }
+                    maxMonthlyCostUSD:
+                      type: number
+                      minimum: 0
+                    autoscaling:
+                      type: object
+                      properties:
+                        enabled: { type: boolean }
+                        minReplicas: { type: integer, minimum: 1 }
+                        maxReplicas: { type: integer, minimum: 1 }
+                        cpuUtilizationTargetPct: { type: integer, minimum: 1, maximum: 100 }
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: driftexceptions.kubeintent.io
+spec:
+  group: kubeintent.io
+  names:
+    kind: DriftException
+    listKind: DriftExceptionList
+    plural: driftexceptions
+    singular: driftexception
+    shortNames: [de]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [appIntentRef, expiresAt, fields, reason]
+              properties:
+                appIntentRef:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+                fields:
+                  type: array
+                  items:
+                    type: string
+                reason:
+                  type: string
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeintent-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubeintent-controller-manager
+  namespace: kubeintent-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeintent-controller-manager
+rules:
+  - apiGroups: ["kubeintent.io"]
+    resources: ["appintents", "appintents/status", "runtimeprofiles", "namespaceintents", "driftexceptions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeintent-controller-manager
+subjects:
+  - kind: ServiceAccount
+    name: kubeintent-controller-manager
+    namespace: kubeintent-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeintent-controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeintent-controller-manager
+  namespace: kubeintent-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubeintent-controller-manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubeintent-controller-manager
+    spec:
+      serviceAccountName: kubeintent-controller-manager
+      containers:
+        - name: manager
+          image: ghcr.io/ajaypathak/kubeintent:latest
+          imagePullPolicy: Always
+          command: ["/manager"]
+          args: ["--leader-elect"]
+          ports:
+            - containerPort: 8081
+              name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: healthz
+            initialDelaySeconds: 5
+            periodSeconds: 10

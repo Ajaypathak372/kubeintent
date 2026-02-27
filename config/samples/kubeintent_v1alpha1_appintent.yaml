@@ -1,0 +1,21 @@
+apiVersion: kubeintent.io/v1alpha1
+kind: AppIntent
+metadata:
+  name: checkout-intent
+  namespace: default
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkout
+  runtimeProfileRef: production-default
+  policy:
+    availability: gold
+    latencyTargetMs: 200
+    maxMonthlyCostUSD: 800
+    securityTier: hardened
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 15
+      cpuUtilizationTargetPct: 60
