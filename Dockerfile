@@ -1,13 +1,16 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.22 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.22 AS builder
 WORKDIR /workspace
+
+ARG TARGETOS
+ARG TARGETARCH
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager ./main.go
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o manager ./main.go
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
