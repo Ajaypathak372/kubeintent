@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: default
+  labels:
+    app: checkout
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: checkout
+  template:
+    metadata:
+      labels:
+        app: checkout
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: kubeintent.io/v1alpha1
+kind: RuntimeProfile
+metadata:
+  name: production-default
+spec:
+  defaults:
+    availability: silver
+    securityTier: baseline
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpuUtilizationTargetPct: 70
+---
+apiVersion: kubeintent.io/v1alpha1
+kind: AppIntent
+metadata:
+  name: checkout-intent
+  namespace: default
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkout
+  runtimeProfileRef: production-default
+  policy:
+    availability: gold
+    latencyTargetMs: 200
+    maxMonthlyCostUSD: 800
+    securityTier: hardened
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 15
+      cpuUtilizationTargetPct: 60

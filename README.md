@@ -58,6 +58,23 @@ This single file includes:
 - ServiceAccount + RBAC
 - Controller Deployment
 
+## Quick E2E Test
+
+Apply a ready-to-run sample with proper YAML indentation:
+
+```bash
+kubectl apply -f config/samples/kubeintent_v1alpha1_e2e_test.yaml
+```
+
+Verify generated resources:
+
+```bash
+kubectl -n default get appintent checkout-intent
+kubectl -n default get hpa checkout-kubeintent-hpa
+kubectl -n default get networkpolicy checkout-kubeintent-netpol
+kubectl -n default get pdb checkout-kubeintent-pdb
+```
+
 ## Next Steps
 
 1. Wire controller-runtime manager and reconcilers.
