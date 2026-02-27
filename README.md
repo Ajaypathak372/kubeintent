@@ -43,7 +43,7 @@ Guardrail enforcement in v0.1:
 Install everything with one file:
 
 ```bash
-kubectl apply -f https://<your-host-or-raw-url>/config/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/Ajaypathak372/kubeintent/refs/heads/main/config/install.yaml
 ```
 
 Local testing:

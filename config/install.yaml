@@ -274,7 +274,7 @@ spec:
       serviceAccountName: kubeintent-controller-manager
       containers:
         - name: manager
-          image: ghcr.io/ajaypathak/kubeintent:latest
+          image: ghcr.io/ajaypathak372/kubeintent:latest
           imagePullPolicy: Always
           command: ["/manager"]
           args: ["--leader-elect"]

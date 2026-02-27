@@ -1,4 +1,4 @@
-IMAGE ?= ghcr.io/ajaypathak/kubeintent:latest
+IMAGE ?= ghcr.io/ajaypathak372/kubeintent:latest
 
 run:
 	go run ./main.go
