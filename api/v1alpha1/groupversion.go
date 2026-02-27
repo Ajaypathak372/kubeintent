@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	GroupVersion = schema.GroupVersion{Group: "kubeintent.io", Version: "v1alpha1"}
+	GroupVersion  = schema.GroupVersion{Group: "kubeintent.io", Version: "v1alpha1"}
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme = SchemeBuilder.AddToScheme
+	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
 func addKnownTypes(scheme *runtime.Scheme) error {

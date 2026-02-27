@@ -28,7 +28,9 @@ jobs:
           cache: true
 
       - name: Verify formatting
-        run: test -z "$(gofmt -l .)"
+        run: |
+          unformatted=$(find . -type f -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -l)
+          test -z "$unformatted"
 
       - name: Run tests
         run: go test ./...

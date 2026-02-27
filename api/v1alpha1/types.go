@@ -12,7 +12,7 @@ type TargetRef struct {
 }
 
 type AutoscalingPolicy struct {
-	Enabled                 bool  `json:"enabled,omitempty"`
+	Enabled                 bool   `json:"enabled,omitempty"`
 	MinReplicas             *int32 `json:"minReplicas,omitempty"`
 	MaxReplicas             *int32 `json:"maxReplicas,omitempty"`
 	CPUUtilizationTargetPct *int32 `json:"cpuUtilizationTargetPct,omitempty"`
@@ -79,7 +79,7 @@ type RuntimeProfileList struct {
 }
 
 type NamespaceIntentSpec struct {
-	Priority *int32      `json:"priority,omitempty"`
+	Priority *int32       `json:"priority,omitempty"`
 	Policy   IntentPolicy `json:"policy,omitempty"`
 }
 
@@ -119,7 +119,9 @@ type DriftExceptionList struct {
 }
 
 func (in *AppIntent) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(AppIntent)
 	*out = *in
 	out.ObjectMeta = *in.ObjectMeta.DeepCopy()
@@ -131,7 +133,9 @@ func (in *AppIntent) DeepCopyObject() runtime.Object {
 }
 
 func (in *AppIntentList) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(AppIntentList)
 	*out = *in
 	if in.Items != nil {
@@ -142,7 +146,9 @@ func (in *AppIntentList) DeepCopyObject() runtime.Object {
 }
 
 func (in *RuntimeProfile) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(RuntimeProfile)
 	*out = *in
 	out.ObjectMeta = *in.ObjectMeta.DeepCopy()
@@ -150,7 +156,9 @@ func (in *RuntimeProfile) DeepCopyObject() runtime.Object {
 }
 
 func (in *RuntimeProfileList) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(RuntimeProfileList)
 	*out = *in
 	if in.Items != nil {
@@ -161,7 +169,9 @@ func (in *RuntimeProfileList) DeepCopyObject() runtime.Object {
 }
 
 func (in *NamespaceIntent) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(NamespaceIntent)
 	*out = *in
 	out.ObjectMeta = *in.ObjectMeta.DeepCopy()
@@ -169,7 +179,9 @@ func (in *NamespaceIntent) DeepCopyObject() runtime.Object {
 }
 
 func (in *NamespaceIntentList) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(NamespaceIntentList)
 	*out = *in
 	if in.Items != nil {
@@ -180,7 +192,9 @@ func (in *NamespaceIntentList) DeepCopyObject() runtime.Object {
 }
 
 func (in *DriftException) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(DriftException)
 	*out = *in
 	out.ObjectMeta = *in.ObjectMeta.DeepCopy()
@@ -188,7 +202,9 @@ func (in *DriftException) DeepCopyObject() runtime.Object {
 }
 
 func (in *DriftExceptionList) DeepCopyObject() runtime.Object {
-	if in == nil { return nil }
+	if in == nil {
+		return nil
+	}
 	out := new(DriftExceptionList)
 	*out = *in
 	if in.Items != nil {

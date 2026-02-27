@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
