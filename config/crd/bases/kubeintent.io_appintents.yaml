@@ -76,15 +76,69 @@ spec:
                       lastTransitionTime:
                         type: string
                         format: date-time
+                observedState:
+                  type: object
+                  properties:
+                    lastObservedAt:
+                      type: string
+                      format: date-time
+                    latency:
+                      type: object
+                      properties:
+                        p99: { type: string }
+                        p50: { type: string }
+                    currentReplicas:
+                      type: integer
+                      format: int32
+                    currentMonthlyCostUSD:
+                      type: number
+                    observedRPS:
+                      type: number
+                decisions:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      at:
+                        type: string
+                        format: date-time
+                      action:
+                        type: string
+                        enum: [ScaleReplicas, NoOp, Blocked]
+                      reason: { type: string }
+                      fromValue: { type: string }
+                      toValue: { type: string }
+                      inputs:
+                        type: object
+                        additionalProperties:
+                          type: string
+                compliance:
+                  type: object
+                  properties:
+                    overall:
+                      type: string
+                      enum: [Meeting, AtRisk, Violating, Unknown]
       subresources:
         status: {}
       additionalPrinterColumns:
         - name: Target
           type: string
           jsonPath: .spec.targetRef.name
-        - name: Availability
+        - name: Compliance
           type: string
-          jsonPath: .spec.policy.availability
-        - name: Security
+          jsonPath: .status.compliance.overall
+        - name: P99
           type: string
-          jsonPath: .spec.policy.securityTier
+          jsonPath: .status.observedState.latency.p99
+        - name: Replicas
+          type: integer
+          jsonPath: .status.observedState.currentReplicas
+        - name: Cost/Month
+          type: string
+          jsonPath: .status.observedState.currentMonthlyCostUSD
+          description: Estimated monthly cost in USD
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

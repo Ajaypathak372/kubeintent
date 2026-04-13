@@ -32,9 +32,102 @@ type AppIntentSpec struct {
 	Policy            IntentPolicy `json:"policy"`
 }
 
+// AppIntentStatus reflects the observed state of an AppIntent, including
+// feedback-loop telemetry, recent controller decisions, and a compliance
+// summary for the declared intent.
 type AppIntentStatus struct {
 	ObservedGeneration int64              `json:"observedGeneration,omitempty"`
 	Conditions         []metav1.Condition `json:"conditions,omitempty"`
+
+	// ObservedState is the most recent runtime observation for the target
+	// workload, populated by the feedback-loop reconciler.
+	ObservedState *ObservedState `json:"observedState,omitempty"`
+
+	// Decisions is a bounded history of the most recent closed-loop
+	// decisions the controller has taken. Capped at maxDecisions entries;
+	// use AppendDecision to mutate.
+	Decisions []Decision `json:"decisions,omitempty"`
+
+	// Compliance summarises how the workload is meeting its declared
+	// intent overall.
+	Compliance *Compliance `json:"compliance,omitempty"`
+}
+
+// ObservedState holds the most recent observed runtime state for the target
+// workload. All fields are optional; a nil pointer means "not observed".
+type ObservedState struct {
+	// LastObservedAt is the wall-clock time at which the telemetry adapter
+	// produced this observation.
+	LastObservedAt metav1.Time `json:"lastObservedAt,omitempty"`
+
+	// Latency holds observed request-latency percentiles for the workload.
+	Latency *Latency `json:"latency,omitempty"`
+
+	// CurrentReplicas is the observed replica count on the target
+	// Deployment. Pointer so that "0 replicas" is distinguishable from
+	// "not observed".
+	CurrentReplicas *int32 `json:"currentReplicas,omitempty"`
+
+	// CurrentMonthlyCostUSD is the estimated run-rate cost of the
+	// workload, extrapolated from the most recent observation window.
+	CurrentMonthlyCostUSD *float64 `json:"currentMonthlyCostUSD,omitempty"`
+
+	// ObservedRPS is the observed steady-state request rate.
+	ObservedRPS *float64 `json:"observedRPS,omitempty"`
+}
+
+// Latency holds observed request-latency percentiles as Go duration
+// strings (e.g. "42ms", "1.2s"). Parseable by time.ParseDuration.
+type Latency struct {
+	P99 string `json:"p99,omitempty"`
+	P50 string `json:"p50,omitempty"`
+}
+
+// Decision records a single closed-loop action taken (or considered) by
+// the controller. Decisions form an append-only audit trail on the status
+// subresource, bounded to the most recent maxDecisions entries.
+type Decision struct {
+	// ID is a stable identifier, formatted as "dec-<RFC3339-timestamp>".
+	ID string `json:"id,omitempty"`
+
+	// At is the time the decision was made.
+	At metav1.Time `json:"at,omitempty"`
+
+	// Action is the kind of decision. One of: ScaleReplicas, NoOp, Blocked.
+	Action string `json:"action,omitempty"`
+
+	// Reason is a multi-line, human-readable explanation.
+	Reason string `json:"reason,omitempty"`
+
+	// FromValue is the prior value (e.g. "3") as a stringified scalar so
+	// that a single Decision type can describe heterogeneous transitions.
+	FromValue string `json:"fromValue,omitempty"`
+
+	// ToValue is the new value (e.g. "5"), stringified for the same reason.
+	ToValue string `json:"toValue,omitempty"`
+
+	// Inputs captures the observed values that drove the decision, keyed
+	// by a short name (e.g. "p99", "cpuUtil", "rps").
+	Inputs map[string]string `json:"inputs,omitempty"`
+}
+
+// Compliance summarises how the workload is meeting its declared intent.
+type Compliance struct {
+	// Overall is one of: Meeting, AtRisk, Violating, Unknown.
+	Overall string `json:"overall,omitempty"`
+}
+
+// maxDecisions is the cap on the number of entries retained in
+// AppIntentStatus.Decisions. Older entries are dropped on append.
+const maxDecisions = 50
+
+// AppendDecision appends d to s.Decisions and trims the slice to the most
+// recent maxDecisions entries (oldest-first eviction).
+func (s *AppIntentStatus) AppendDecision(d Decision) {
+	s.Decisions = append(s.Decisions, d)
+	if len(s.Decisions) > maxDecisions {
+		s.Decisions = s.Decisions[len(s.Decisions)-maxDecisions:]
+	}
 }
 
 // +kubebuilder:object:root=true
@@ -128,6 +221,43 @@ func (in *AppIntent) DeepCopyObject() runtime.Object {
 	if in.Status.Conditions != nil {
 		out.Status.Conditions = make([]metav1.Condition, len(in.Status.Conditions))
 		copy(out.Status.Conditions, in.Status.Conditions)
+	}
+	if in.Status.ObservedState != nil {
+		obs := *in.Status.ObservedState
+		if in.Status.ObservedState.Latency != nil {
+			lat := *in.Status.ObservedState.Latency
+			obs.Latency = &lat
+		}
+		if in.Status.ObservedState.CurrentReplicas != nil {
+			v := *in.Status.ObservedState.CurrentReplicas
+			obs.CurrentReplicas = &v
+		}
+		if in.Status.ObservedState.CurrentMonthlyCostUSD != nil {
+			v := *in.Status.ObservedState.CurrentMonthlyCostUSD
+			obs.CurrentMonthlyCostUSD = &v
+		}
+		if in.Status.ObservedState.ObservedRPS != nil {
+			v := *in.Status.ObservedState.ObservedRPS
+			obs.ObservedRPS = &v
+		}
+		out.Status.ObservedState = &obs
+	}
+	if in.Status.Decisions != nil {
+		out.Status.Decisions = make([]Decision, len(in.Status.Decisions))
+		for i := range in.Status.Decisions {
+			out.Status.Decisions[i] = in.Status.Decisions[i]
+			if in.Status.Decisions[i].Inputs != nil {
+				m := make(map[string]string, len(in.Status.Decisions[i].Inputs))
+				for k, v := range in.Status.Decisions[i].Inputs {
+					m[k] = v
+				}
+				out.Status.Decisions[i].Inputs = m
+			}
+		}
+	}
+	if in.Status.Compliance != nil {
+		c := *in.Status.Compliance
+		out.Status.Compliance = &c
 	}
 	return out
 }

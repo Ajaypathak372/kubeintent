@@ -16,6 +16,6 @@ spec:
     securityTier: hardened
     autoscaling:
       enabled: true
-      minReplicas: 3
-      maxReplicas: 15
+      minReplicas: 1
+      maxReplicas: 2
       cpuUtilizationTargetPct: 60

@@ -1,0 +1,73 @@
+# Demo workload: prometheus-example-app
+# Emits http_request_duration_seconds histogram and http_requests_total counter.
+# The AppIntent watches these metrics and reacts to latency violations.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: app
+          image: quay.io/brancz/prometheus-example-app:v0.6.0
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: default
+spec:
+  selector:
+    app: demo-app
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: kubeintent.io/v1alpha1
+kind: AppIntent
+metadata:
+  name: demo-app
+  namespace: default
+  annotations:
+    # Override default PromQL to match the exact metric names emitted by
+    # prometheus-example-app. The app labels metrics with handler="/",
+    # so we sum across all handlers for the target pod.
+    kubeintent.io/promql-p99: 'histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace="default",pod=~"demo-app.*"}[2m])) by (le))'
+    kubeintent.io/promql-p50: 'histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace="default",pod=~"demo-app.*"}[2m])) by (le))'
+    kubeintent.io/promql-rps: 'sum(rate(http_request_duration_seconds_count{namespace="default",pod=~"demo-app.*"}[1m]))'
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo-app
+  policy:
+    availability: silver
+    latencyTargetMs: 50
+    maxMonthlyCostUSD: 500
+    securityTier: baseline
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      cpuUtilizationTargetPct: 70

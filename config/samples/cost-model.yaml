@@ -1,0 +1,17 @@
+nodePools:
+  - name: m5.large
+    hourlyUSD: 0.096
+    cpuCores: 2
+    memoryGB: 8
+  - name: m5.xlarge
+    hourlyUSD: 0.192
+    cpuCores: 4
+    memoryGB: 16
+  - name: m5.2xlarge
+    hourlyUSD: 0.384
+    cpuCores: 8
+    memoryGB: 32
+  - name: c5.xlarge
+    hourlyUSD: 0.170
+    cpuCores: 4
+    memoryGB: 8

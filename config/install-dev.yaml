@@ -123,9 +123,6 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
-        - name: Target
-          type: string
-          jsonPath: .spec.targetRef.name
         - name: Compliance
           type: string
           jsonPath: .status.compliance.overall
@@ -136,9 +133,8 @@ spec:
           type: integer
           jsonPath: .status.observedState.currentReplicas
         - name: Cost/Month
-          type: string
+          type: number
           jsonPath: .status.observedState.currentMonthlyCostUSD
-          description: Estimated monthly cost in USD
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp
@@ -334,7 +330,7 @@ spec:
           image: kubeintent
           imagePullPolicy: Never
           command: ["/manager"]
-          args: ["--leader-elect"]
+          args: ["--leader-elect", "--prometheus-url=http://prometheus-server.monitoring.svc:80"]
           ports:
             - containerPort: 8081
               name: healthz
