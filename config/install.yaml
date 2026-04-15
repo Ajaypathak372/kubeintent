@@ -92,6 +92,8 @@ spec:
                       format: int32
                     currentMonthlyCostUSD:
                       type: number
+                    costDisplay:
+                      type: string
                     observedRPS:
                       type: number
                 decisions:
@@ -137,7 +139,7 @@ spec:
           jsonPath: .status.observedState.currentReplicas
         - name: Cost/Month
           type: string
-          jsonPath: .status.observedState.currentMonthlyCostUSD
+          jsonPath: .status.observedState.costDisplay
           description: Estimated monthly cost in USD
         - name: Age
           type: date
