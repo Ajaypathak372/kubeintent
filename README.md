@@ -1,83 +1,125 @@
 # KubeIntent
 
-A Kubernetes operator that turns high-level application intent into concrete cluster policies and runtime controls.
+*Declare what your services need. Kubernetes will deliver it.*
 
-## Vision
+<!-- TODO: replace placeholder badge URLs once CI workflow name and license are confirmed -->
+[![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go)](https://go.dev)
+[![CI](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml/badge.svg)](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ajaypathak/kubeintent)](https://goreportcard.com/report/github.com/ajaypathak/kubeintent)
+<!-- TODO: add license badge once LICENSE file exists -->
+<!-- [![License](https://img.shields.io/github/license/Ajaypathak372/kubeintent)](LICENSE) -->
+[![GitHub stars](https://img.shields.io/github/stars/Ajaypathak372/kubeintent?style=social)](https://github.com/Ajaypathak372/kubeintent)
 
-Instead of manually managing multiple Kubernetes resources, teams declare **intent** in one CRD and the operator continuously materializes/enforces:
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="KubeIntent demo — watch the operator react to an SLO violation in real time" width="720">
+</p>
 
-- Autoscaling defaults (HPA/KEDA hooks)
-- Reliability guardrails (PDB, topology spread, probe policies)
-- Security baseline (NetworkPolicy, Pod Security labels)
-- Cost controls (resource bounds, optional scheduling hints)
+*KubeIntent watching a latency target, detecting a violation, and scaling the service to restore compliance — with every decision logged.*
 
-## CRDs (v1alpha1)
+Kubernetes makes you describe *how* a service should run — replicas, probes, disruption budgets, autoscalers, network policies. It never asks what the service is supposed to *achieve*. So when latency spikes or the bill balloons, nobody can say whether the cluster is doing its job, because nobody wrote down what the job was. KubeIntent closes that gap: you declare the outcome, and the operator handles the mechanism.
 
-- `AppIntent` – desired high-level policy per app/workload.
-- `RuntimeProfile` – reusable profile that maps intent to concrete defaults.
-- `NamespaceIntent` – namespace-level guardrails and defaults.
-- `DriftException` – temporary and auditable override with TTL.
+## Declare the outcome, not the mechanism
 
-## Repo Layout
+Write one `AppIntent` CR per workload. Describe what the service needs — availability tier, latency target, cost ceiling, security posture, scaling bounds. The operator figures out the rest.
 
-- `config/crd/bases/` – CRD YAMLs
-- `config/samples/` – example resources
-- `api/v1alpha1/` – API type definitions (Go)
-- `docs/` – architecture and roadmap
+```yaml
+apiVersion: kubeintent.io/v1alpha1
+kind: AppIntent
+metadata:
+  name: checkout-intent
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkout
+  policy:
+    availability: gold
+    latencyTargetMs: 200
+    maxMonthlyCostUSD: 800
+    securityTier: hardened
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 15
+      cpuUtilizationTargetPct: 60
+```
 
-## MVP Scope
+From this single resource, the operator materializes a `HorizontalPodAutoscaler`, a `PodDisruptionBudget`, and a `NetworkPolicy` — all configured to match the declared intent. It watches real p99 latency via Prometheus, adjusts the service when the target is missed, and logs every decision with its reason to the CR's status.
 
-MVP reconciles `AppIntent` + optional `RuntimeProfile` into:
+## How it works
 
-1. `PodDisruptionBudget`
-2. `NetworkPolicy` (security-tier aware: strict defaults to deny-all egress)
-3. `HorizontalPodAutoscaler` (if metrics + scaling policy set)
+- **Declare intent** — SLO targets, cost budget, resilience requirements, security tier.
+- **Materialize** — the operator creates and maintains the HPA, PDB, and NetworkPolicy.
+- **Observe** — Prometheus metrics flow into `status.observedState` (latency, replicas, cost, RPS).
+- **React** — when intent is violated, the operator adjusts and logs why in `status.decisions`.
 
-Guardrail enforcement in v0.1:
-- `securityTier`: namespace minimum cannot be weakened by app intent.
-- `maxMonthlyCostUSD`: app/profile cannot exceed namespace cap.
-- autoscaling bounds: namespace min/max are enforced.
+## Try it in 5 minutes
 
-## One-command install (CRDs + controller)
+```bash
+git clone https://github.com/Ajaypathak372/kubeintent
+cd kubeintent
+make demo
+```
 
-Install everything with one file:
+This spins up a kind cluster, installs KubeIntent and Prometheus, deploys a sample service, and prints the exact commands to watch the closed loop in action.
+
+## Install
+
+Install CRDs, namespace, RBAC, and the controller with a single command:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/Ajaypathak372/kubeintent/refs/heads/main/config/install.yaml
 ```
 
-Local testing:
+Or from a local clone:
 
 ```bash
 kubectl apply -f config/install.yaml
 ```
 
-This single file includes:
-- All CRDs (`AppIntent`, `RuntimeProfile`, `NamespaceIntent`, `DriftException`)
-- `kubeintent-system` namespace
-- ServiceAccount + RBAC
-- Controller Deployment
+This deploys everything into the `kubeintent-system` namespace. See [installation docs](docs/installation.md) for building from source, kind cluster setup, and Prometheus integration.
 
-## Quick E2E Test
+## What you can declare
 
-Apply a ready-to-run sample with proper YAML indentation:
+| Field | What it means | Example |
+|---|---|---|
+| `policy.availability` | Resilience tier: `bronze`, `silver`, or `gold` | `gold` |
+| `policy.latencyTargetMs` | Max acceptable p99 latency in milliseconds | `200` |
+| `policy.maxMonthlyCostUSD` | Cost ceiling for the workload per month | `800` |
+| `policy.securityTier` | Network policy posture: `baseline`, `hardened`, or `strict` | `hardened` |
+| `policy.autoscaling.enabled` | Whether to create an HPA | `true` |
+| `policy.autoscaling.minReplicas` | HPA floor | `3` |
+| `policy.autoscaling.maxReplicas` | HPA ceiling | `15` |
+| `policy.autoscaling.cpuUtilizationTargetPct` | CPU target for scaling | `60` |
+| `targetRef` | The workload to manage (Deployment) | `apps/v1 Deployment checkout` |
+| `runtimeProfileRef` | Optional [RuntimeProfile](docs/crds.md) for shared defaults | `production-default` |
 
-```bash
-kubectl apply -f config/samples/kubeintent_v1alpha1_e2e_test.yaml
-```
+Namespace-level guardrails (`NamespaceIntent`) and temporary overrides (`DriftException`) are also supported. See [CRD reference](docs/crds.md) for details.
 
-Verify generated resources:
+## Project status
 
-```bash
-kubectl -n default get appintent checkout-intent
-kubectl -n default get hpa checkout-kubeintent-hpa
-kubectl -n default get networkpolicy checkout-kubeintent-netpol
-kubectl -n default get pdb checkout-kubeintent-pdb
-```
+KubeIntent is **v0.x**. The CRD schema may change before v1.
 
-## Next Steps
+**What works today**: the `AppIntent` reconciler runs a full closed feedback loop:
+- **Materialize**: PDB, NetworkPolicy, and HPA from declared intent, with policy composed by merging `RuntimeProfile` defaults with `NamespaceIntent` guardrails.
+- **Observe**: Prometheus telemetry adapter queries p99/p50 latency and RPS, populating `status.observedState`.
+- **React**: when latency or cost targets are violated, the controller adjusts HPA scaling (with a 2-minute cooldown) and logs every decision with its reasoning to `status.decisions`.
+- **Compliance**: `status.compliance.overall` reports `Meeting`, `AtRisk`, `Violating`, or `Unknown`.
+- **Cost model**: per-replica cost projection from configurable node pool pricing.
 
-1. Wire controller-runtime manager and reconcilers.
-2. Add status conditions and event recording.
-3. Add conformance tests for policy materialization.
-4. Add optional OPA/Kyverno integration in v1beta1.
+**What's next**:
+- Conformance test suite for policy materialization.
+- `DriftException` enforcement in the reconcile loop.
+- Multi-metric reaction (CPU, memory, custom metrics beyond latency).
+- Dedicated reconcilers for `RuntimeProfile`, `NamespaceIntent`, and `DriftException`.
+
+## Contributing
+
+Contributions are welcome — check the [issue tracker](https://github.com/Ajaypathak372/kubeintent/issues) for `good first issue` labels, and see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+<!-- TODO: add link to Discord/Slack or GitHub Discussions when available -->
+
+## License
+
+<!-- TODO: add a LICENSE file to the repository -->
+License not yet specified. See [LICENSE](LICENSE) for details once added.
