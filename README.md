@@ -5,7 +5,7 @@
 <!-- TODO: replace placeholder badge URLs once CI workflow name and license are confirmed -->
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go)](https://go.dev)
 [![CI](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml/badge.svg)](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ajaypathak/kubeintent)](https://goreportcard.com/report/github.com/ajaypathak/kubeintent)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Ajaypathak372/kubeintent)](https://goreportcard.com/report/github.com/Ajaypathak372/kubeintent)
 <!-- TODO: add license badge once LICENSE file exists -->
 <!-- [![License](https://img.shields.io/github/license/Ajaypathak372/kubeintent)](LICENSE) -->
 [![GitHub stars](https://img.shields.io/github/stars/Ajaypathak372/kubeintent?style=social)](https://github.com/Ajaypathak372/kubeintent)
