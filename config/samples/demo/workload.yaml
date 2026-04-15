@@ -1,6 +1,7 @@
-# Demo workload: prometheus-example-app
-# Emits http_request_duration_seconds histogram and http_requests_total counter.
-# The AppIntent watches these metrics and reacts to latency violations.
+# Demo workload: stefanprodan/podinfo
+# Emits http_request_duration_seconds histogram. Random delay is configured
+# so that normal traffic stays under the latency target but high concurrency
+# pushes p99 above the threshold, triggering the closed-loop react phase.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -18,13 +19,20 @@ spec:
         app: demo-app
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
+        prometheus.io/port: "9898"
     spec:
       containers:
         - name: app
-          image: quay.io/brancz/prometheus-example-app:v0.6.0
+          image: ghcr.io/stefanprodan/podinfo:6.7.1
+          command: ["./podinfo"]
+          args:
+            - "--port=9898"
+            - "--random-delay=true"
+            - "--random-delay-unit=ms"
+            - "--random-delay-min=50"
+            - "--random-delay-max=80"
           ports:
-            - containerPort: 8080
+            - containerPort: 9898
           resources:
             requests:
               cpu: 100m
@@ -42,7 +50,7 @@ spec:
     app: demo-app
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: 9898
 ---
 apiVersion: kubeintent.io/v1alpha1
 kind: AppIntent
@@ -50,9 +58,6 @@ metadata:
   name: demo-app
   namespace: default
   annotations:
-    # Override default PromQL to match the exact metric names emitted by
-    # prometheus-example-app. The app labels metrics with handler="/",
-    # so we sum across all handlers for the target pod.
     kubeintent.io/promql-p99: 'histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace="default",pod=~"demo-app.*"}[2m])) by (le))'
     kubeintent.io/promql-p50: 'histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace="default",pod=~"demo-app.*"}[2m])) by (le))'
     kubeintent.io/promql-rps: 'sum(rate(http_request_duration_seconds_count{namespace="default",pod=~"demo-app.*"}[1m]))'
@@ -63,7 +68,7 @@ spec:
     name: demo-app
   policy:
     availability: silver
-    latencyTargetMs: 50
+    latencyTargetMs: 100
     maxMonthlyCostUSD: 500
     securityTier: baseline
     autoscaling:

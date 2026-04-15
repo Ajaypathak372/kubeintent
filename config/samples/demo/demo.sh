@@ -37,7 +37,7 @@ kubectl -n kubeintent-system set env deployment/kubeintent-controller-manager \
 
 # Patch args: remove existing args, set the ones we need.
 kubectl -n kubeintent-system patch deployment kubeintent-controller-manager --type=json \
-    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args","value":["--leader-elect","--prometheus-url=http://prometheus.monitoring.svc:9090"]}]' >/dev/null
+    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args","value":["--leader-elect","--prometheus-url=http://prometheus.monitoring.svc:9090","--cost-model-config=/etc/kubeintent/cost-model.yaml"]}]' >/dev/null
 
 echo "==> Waiting for Prometheus to be ready..."
 kubectl -n monitoring rollout status deployment/prometheus --timeout=90s
@@ -62,10 +62,10 @@ Watch the AppIntent status:
 
 In another terminal, generate load:
   kubectl run -it --rm load --image=williamyeh/hey --restart=Never \
-    -- -z 60s -c 50 http://demo-app.default.svc.cluster.local
+    -- -z 60s -c 80 http://demo-app.default.svc.cluster.local
 
 You should see:
-  - p99 latency rise above 50ms
+  - p99 latency rise above 100ms
   - compliance change to AtRisk or Violating
   - the operator scale the HPA maxReplicas up
   - a Decision appear in status.decisions explaining why
