@@ -674,29 +674,33 @@ func (r *AppIntentReconciler) react(ctx context.Context, intent *platformv1alpha
 		return
 	}
 
+	// Rate limit: one react decision per intent per cooldown (applies to all paths).
+	key := types.NamespacedName{Namespace: intent.Namespace, Name: intent.Name}
+	r.lastActionMu.Lock()
+	if r.lastAction == nil {
+		r.lastAction = make(map[types.NamespacedName]time.Time)
+	}
+	last, hasLast := r.lastAction[key]
+	r.lastActionMu.Unlock()
+	if hasLast && time.Since(last) < reactCooldown {
+		decision := platformv1alpha1.Decision{
+			ID:     fmt.Sprintf("react-%d", now.UnixMilli()),
+			At:     now,
+			Action: "NoOp",
+			Reason: fmt.Sprintf("Rate limited; last action %s ago", time.Since(last).Truncate(time.Second)),
+		}
+		intent.Status.AppendDecision(decision)
+		logger.Info("react: rate limited", "intent", intent.Name, "lastAction", last)
+		return
+	}
+
+	// Mark this react evaluation so cooldown applies to all decision paths.
+	r.lastActionMu.Lock()
+	r.lastAction[key] = time.Now()
+	r.lastActionMu.Unlock()
+
 	// Latency violation: try to scale up.
 	if latencyViolation {
-		// Rate limit: one action per intent per cooldown.
-		key := types.NamespacedName{Namespace: intent.Namespace, Name: intent.Name}
-		r.lastActionMu.Lock()
-		if r.lastAction == nil {
-			r.lastAction = make(map[types.NamespacedName]time.Time)
-		}
-		last, ok := r.lastAction[key]
-		if ok && time.Since(last) < reactCooldown {
-			r.lastActionMu.Unlock()
-			decision := platformv1alpha1.Decision{
-				ID:     fmt.Sprintf("react-%d", now.UnixMilli()),
-				At:     now,
-				Action: "NoOp",
-				Reason: fmt.Sprintf("Rate limited; last action %s ago", time.Since(last).Truncate(time.Second)),
-			}
-			intent.Status.AppendDecision(decision)
-			logger.Info("react: rate limited", "intent", intent.Name, "lastAction", last)
-			return
-		}
-		r.lastActionMu.Unlock()
-
 		// Ensure HPA exists and is managed by us.
 		if effectiveAutoscaling == nil || !effectiveAutoscaling.Enabled {
 			decision := platformv1alpha1.Decision{
@@ -780,11 +784,6 @@ func (r *AppIntentReconciler) react(ctx context.Context, intent *platformv1alpha
 			logger.Error(err, "react: failed to patch HPA maxReplicas")
 			return
 		}
-
-		// Record rate-limit timestamp.
-		r.lastActionMu.Lock()
-		r.lastAction[key] = time.Now()
-		r.lastActionMu.Unlock()
 
 		decision := platformv1alpha1.Decision{
 			ID:        fmt.Sprintf("react-%d", now.UnixMilli()),

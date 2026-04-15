@@ -29,8 +29,8 @@ spec:
             - "--port=9898"
             - "--random-delay=true"
             - "--random-delay-unit=ms"
-            - "--random-delay-min=50"
-            - "--random-delay-max=80"
+            - "--random-delay-min=70"
+            - "--random-delay-max=150"
           ports:
             - containerPort: 9898
           resources:
@@ -74,5 +74,5 @@ spec:
     autoscaling:
       enabled: true
       minReplicas: 1
-      maxReplicas: 3
+      maxReplicas: 8
       cpuUtilizationTargetPct: 70
