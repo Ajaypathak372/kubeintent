@@ -85,10 +85,6 @@ type ObservedState struct {
 type Latency struct {
 	P99 string `json:"p99,omitempty"`
 	P50 string `json:"p50,omitempty"`
-
-	// P99Display is a human-readable version of P99 for printer columns.
-	// Shows "—" when no data is available, or a truncated duration like "174ms".
-	P99Display string `json:"p99Display,omitempty"`
 }
 
 // Decision records a single closed-loop action taken (or considered) by

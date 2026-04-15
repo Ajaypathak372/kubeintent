@@ -512,11 +512,10 @@ func (r *AppIntentReconciler) observe(ctx context.Context, intent *platformv1alp
 		p99, err = r.Telemetry.ObserveLatencyP99(ctx, intent)
 		if err != nil {
 			logger.Info("telemetry: p99 query failed", "error", err)
-			obs.Latency.P99Display = "—"
+			obs.Latency.P99 = "0s"
 		} else {
 			p99OK = true
 			obs.Latency.P99 = p99.String()
-			obs.Latency.P99Display = p99.Truncate(time.Millisecond).String()
 		}
 
 		p50, err := r.Telemetry.ObserveLatencyP50(ctx, intent)
