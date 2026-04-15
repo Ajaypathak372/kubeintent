@@ -87,6 +87,7 @@ spec:
                       properties:
                         p99: { type: string }
                         p50: { type: string }
+                        p99Display: { type: string }
                     currentReplicas:
                       type: integer
                       format: int32
@@ -133,7 +134,7 @@ spec:
           jsonPath: .status.compliance.overall
         - name: P99
           type: string
-          jsonPath: .status.observedState.latency.p99
+          jsonPath: .status.observedState.latency.p99Display
         - name: Replicas
           type: integer
           jsonPath: .status.observedState.currentReplicas
