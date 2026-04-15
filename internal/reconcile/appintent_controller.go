@@ -555,7 +555,6 @@ func (r *AppIntentReconciler) observe(ctx context.Context, intent *platformv1alp
 			logger.Info("cost projection failed", "error", err)
 		} else {
 			obs.CurrentMonthlyCostUSD = &cost
-			obs.CostDisplay = fmt.Sprintf("$%.2f", cost)
 		}
 	}
 

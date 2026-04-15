@@ -72,10 +72,6 @@ type ObservedState struct {
 	// workload, extrapolated from the most recent observation window.
 	CurrentMonthlyCostUSD *float64 `json:"currentMonthlyCostUSD,omitempty"`
 
-	// CostDisplay is a formatted version of CurrentMonthlyCostUSD for
-	// printer columns (e.g. "$3.50"). Populated by the reconciler.
-	CostDisplay string `json:"costDisplay,omitempty"`
-
 	// ObservedRPS is the observed steady-state request rate.
 	ObservedRPS *float64 `json:"observedRPS,omitempty"`
 }
