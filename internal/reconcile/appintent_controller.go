@@ -695,14 +695,6 @@ func (r *AppIntentReconciler) react(ctx context.Context, intent *platformv1alpha
 	last, hasLast := r.lastAction[key]
 	r.lastActionMu.Unlock()
 	if hasLast && time.Since(last) < reactCooldown {
-		decision := platformv1alpha1.Decision{
-			ID:     fmt.Sprintf("react-%d", now.UnixMilli()),
-			At:     now,
-			Action: "NoOp",
-			Reason: fmt.Sprintf("Rate limited; last action %s ago", time.Since(last).Truncate(time.Second)),
-		}
-		intent.Status.AppendDecision(decision)
-		logger.Info("react: rate limited", "intent", intent.Name, "lastAction", last)
 		return
 	}
 

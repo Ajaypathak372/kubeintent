@@ -128,14 +128,10 @@ func TestReact_ViolationThenRateLimit(t *testing.T) {
 		t.Errorf("expected HPA maxReplicas=6, got %d", updatedHPA.Spec.MaxReplicas)
 	}
 
-	// Second call: should be rate-limited (NoOp).
+	// Second call: should be silently rate-limited (no new decision).
 	r.react(ctx, intent, effectivePolicy, effectiveAutoscaling)
 
-	if len(intent.Status.Decisions) != 2 {
-		t.Fatalf("expected 2 decisions, got %d", len(intent.Status.Decisions))
-	}
-	d2 := intent.Status.Decisions[1]
-	if d2.Action != "NoOp" {
-		t.Errorf("expected NoOp action (rate limited), got %s", d2.Action)
+	if len(intent.Status.Decisions) != 1 {
+		t.Fatalf("expected 1 decision (rate-limited call should be silent), got %d", len(intent.Status.Decisions))
 	}
 }
