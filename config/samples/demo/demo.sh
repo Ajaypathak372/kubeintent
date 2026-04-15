@@ -29,6 +29,11 @@ echo "==> Loading images into kind..."
 kind load docker-image "${DEMO_IMAGE}" --name "${DEMO_CLUSTER}"
 kind load docker-image "${BURNER_IMAGE}" --name "${DEMO_CLUSTER}"
 
+echo "==> Installing metrics-server (required for CPU-based HPA)..."
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml >/dev/null
+kubectl -n kube-system patch deployment metrics-server --type=json \
+    -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' >/dev/null 2>&1 || true
+
 echo "==> Deploying Prometheus..."
 kubectl apply -f config/samples/demo/prometheus.yaml
 
