@@ -698,6 +698,11 @@ func (r *AppIntentReconciler) react(ctx context.Context, intent *platformv1alpha
 		return
 	}
 
+	// Only proceed if there's an actionable violation.
+	if !latencyViolation && !costViolation {
+		return
+	}
+
 	// Mark this react evaluation so cooldown applies to all decision paths.
 	r.lastActionMu.Lock()
 	r.lastAction[key] = time.Now()
