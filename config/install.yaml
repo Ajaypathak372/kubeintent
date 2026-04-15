@@ -263,6 +263,31 @@ spec:
                   type: string
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubeintent-cost-model
+  namespace: kubeintent-system
+data:
+  cost-model.yaml: |
+    nodePools:
+      - name: m5.large
+        hourlyUSD: 0.096
+        cpuCores: 2
+        memoryGB: 8
+      - name: m5.xlarge
+        hourlyUSD: 0.192
+        cpuCores: 4
+        memoryGB: 16
+      - name: m5.2xlarge
+        hourlyUSD: 0.384
+        cpuCores: 8
+        memoryGB: 32
+      - name: c5.xlarge
+        hourlyUSD: 0.170
+        cpuCores: 4
+        memoryGB: 8
+---
+apiVersion: v1
 kind: Namespace
 metadata:
   name: kubeintent-system
@@ -334,10 +359,14 @@ spec:
           image: kubeintent
           imagePullPolicy: Never
           command: ["/manager"]
-          args: ["--leader-elect"]
+          args: ["--leader-elect", "--cost-model-config=/etc/kubeintent/cost-model.yaml"]
           ports:
             - containerPort: 8081
               name: healthz
+          volumeMounts:
+            - name: cost-model
+              mountPath: /etc/kubeintent
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /healthz
@@ -350,3 +379,7 @@ spec:
               port: healthz
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: cost-model
+          configMap:
+            name: kubeintent-cost-model
