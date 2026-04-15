@@ -1,7 +1,7 @@
-# Demo workload: stefanprodan/podinfo
-# Emits http_request_duration_seconds histogram. Random delay is configured
-# so that normal traffic stays under the latency target but high concurrency
-# pushes p99 above the threshold, triggering the closed-loop react phase.
+# Demo workload: cpu-burner
+# Burns CPU via sha256 loops on every request, generating real CPU load
+# that triggers HPA scaling. Exposes http_request_duration_seconds histogram
+# for the operator's PromQL queries. WORK_MS controls per-request CPU time.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -19,26 +19,23 @@ spec:
         app: demo-app
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9898"
+        prometheus.io/port: "8080"
     spec:
       containers:
         - name: app
-          image: ghcr.io/stefanprodan/podinfo:6.7.1
-          command: ["./podinfo"]
-          args:
-            - "--port=9898"
-            - "--random-delay=true"
-            - "--random-delay-unit=ms"
-            - "--random-delay-min=70"
-            - "--random-delay-max=150"
+          image: cpu-burner:demo
+          env:
+            - name: WORK_MS
+              value: "50"
           ports:
-            - containerPort: 9898
+            - containerPort: 8080
           resources:
             requests:
               cpu: 100m
-              memory: 64Mi
-            limits:
               memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
@@ -50,7 +47,7 @@ spec:
     app: demo-app
   ports:
     - port: 80
-      targetPort: 9898
+      targetPort: 8080
 ---
 apiVersion: kubeintent.io/v1alpha1
 kind: AppIntent
@@ -75,4 +72,4 @@ spec:
       enabled: true
       minReplicas: 1
       maxReplicas: 8
-      cpuUtilizationTargetPct: 70
+      cpuUtilizationTargetPct: 50
