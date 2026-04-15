@@ -388,19 +388,31 @@ func (r *AppIntentReconciler) reconcileHPA(ctx context.Context, intent *platform
 			return err
 		}
 		minReplicas := int32(2)
-		maxReplicas := int32(10)
+		specMax := int32(10)
 		if scaling.MinReplicas != nil {
 			minReplicas = *scaling.MinReplicas
 		}
 		if scaling.MaxReplicas != nil {
-			maxReplicas = *scaling.MaxReplicas
+			specMax = *scaling.MaxReplicas
 		}
 		targetCPU := int32(70)
 		if scaling.CPUUtilizationTargetPct != nil {
 			targetCPU = *scaling.CPUUtilizationTargetPct
 		}
 		hpa.Spec.MinReplicas = &minReplicas
-		hpa.Spec.MaxReplicas = maxReplicas
+		// Set maxReplicas conservatively: start at minReplicas for new HPAs.
+		// If the react phase has already bumped maxReplicas, preserve it
+		// (but never exceed the spec ceiling).
+		if hpa.Spec.MaxReplicas == 0 {
+			// New HPA — start conservative.
+			hpa.Spec.MaxReplicas = minReplicas
+		}
+		if hpa.Spec.MaxReplicas < minReplicas {
+			hpa.Spec.MaxReplicas = minReplicas
+		}
+		if hpa.Spec.MaxReplicas > specMax {
+			hpa.Spec.MaxReplicas = specMax
+		}
 		hpa.Spec.ScaleTargetRef = autoscalingv2.CrossVersionObjectReference{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
