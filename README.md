@@ -1,22 +1,40 @@
-# KubeIntent
+<h1 align="center">KubeIntent</h1>
 
-*Declare what your services need. Kubernetes will deliver it.*
+<p align="center">
+  <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.22-00ADD8?style=for-the-badge&logo=go&logoColor=white&labelColor=1e1e2e" alt="Go"/></a>
+  <a href="https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Ajaypathak372/kubeintent/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=1e1e2e" alt="CI"/></a>
+  <a href="https://goreportcard.com/report/github.com/Ajaypathak372/kubeintent"><img src="https://img.shields.io/badge/Go%20Report-A+-22c55e?style=for-the-badge&labelColor=1e1e2e" alt="Go Report Card"/></a>
+  <a href="https://github.com/Ajaypathak372/kubeintent/stargazers"><img src="https://img.shields.io/github/stars/Ajaypathak372/kubeintent?style=for-the-badge&logo=github&color=D97757&labelColor=1e1e2e" alt="Stars"/></a>
+  <a href="https://kubernetes.io"><img src="https://img.shields.io/badge/Kubernetes-v1.31-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white&labelColor=1e1e2e" alt="Kubernetes"/></a>
+</p>
 
-<!-- TODO: replace placeholder badge URLs once CI workflow name and license are confirmed -->
-[![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go)](https://go.dev)
-[![CI](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml/badge.svg)](https://github.com/Ajaypathak372/kubeintent/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Ajaypathak372/kubeintent)](https://goreportcard.com/report/github.com/Ajaypathak372/kubeintent)
-<!-- TODO: add license badge once LICENSE file exists -->
-<!-- [![License](https://img.shields.io/github/license/Ajaypathak372/kubeintent)](LICENSE) -->
-[![GitHub stars](https://img.shields.io/github/stars/Ajaypathak372/kubeintent?style=social)](https://github.com/Ajaypathak372/kubeintent)
+<h3 align="center">Declare what your services need. Kubernetes will deliver it.</h3>
+
+<p align="center">
+  An intent-driven Kubernetes operator that turns SLO targets into live cluster policy.<br/>
+  One CR per workload &mdash; the operator materializes <b>HPA</b>, <b>PDB</b>, and <b>NetworkPolicy</b>,<br/>
+  watches <b>Prometheus</b> metrics, and reacts when targets are violated.
+</p>
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="KubeIntent demo — watch the operator react to an SLO violation in real time" width="720">
 </p>
 
-*KubeIntent watching a latency target, detecting a violation, and scaling the service to restore compliance — with every decision logged.*
+<p align="center"><i>KubeIntent watching a latency target, detecting a violation, and scaling the service to restore compliance — with every decision logged.</i></p>
 
-Kubernetes makes you describe *how* a service should run — replicas, probes, disruption budgets, autoscalers, network policies. It never asks what the service is supposed to *achieve*. So when latency spikes or the bill balloons, nobody can say whether the cluster is doing its job, because nobody wrote down what the job was. KubeIntent closes that gap: you declare the outcome, and the operator handles the mechanism.
+---
+
+## The Problem
+
+Kubernetes makes you describe **how** a service should run — replicas, probes, disruption budgets, autoscalers, network policies. It never asks what the service is supposed to **achieve**. So when latency spikes or the bill balloons, nobody can say whether the cluster is doing its job, because nobody wrote down what the job was.
+
+**Every platform team hits this wall.**
+
+## The Solution
+
+KubeIntent closes the gap. You declare the outcome — availability tier, latency target, cost ceiling, security posture — and the operator handles the mechanism. One `AppIntent` CR replaces a pile of hand-tuned YAML, and a closed feedback loop keeps the service compliant automatically.
+
+---
 
 ## Declare the outcome, not the mechanism
 
