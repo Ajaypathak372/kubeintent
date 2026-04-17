@@ -12,18 +12,56 @@ type TargetRef struct {
 }
 
 type AutoscalingPolicy struct {
-	Enabled                 bool   `json:"enabled,omitempty"`
-	MinReplicas             *int32 `json:"minReplicas,omitempty"`
-	MaxReplicas             *int32 `json:"maxReplicas,omitempty"`
+	// Enabled indicates whether autoscaling is active for the workload.
+	// When true, the system dynamically adjusts replicas based on metrics.
+	// Example: true.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MinReplicas is the minimum number of replicas the workload can scale down to.
+	// This ensures baseline availability even under low traffic.
+	// Must be >= 1 if autoscaling is enabled. Example: 2.
+	MinReplicas *int32 `json:"minReplicas,omitempty"`
+
+	// MaxReplicas is the maximum number of replicas the workload can scale up to.
+	// This limits resource usage and cost during high load.
+	// Must be >= MinReplicas. Example: 10.
+	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
+
+	// CPUUtilizationTargetPct is the target average CPU utilization percentage per pod.
+	// The autoscaler adjusts replicas to maintain this target.
+	// Valid range: 1–100. Example: 70.
 	CPUUtilizationTargetPct *int32 `json:"cpuUtilizationTargetPct,omitempty"`
 }
 
 type IntentPolicy struct {
-	Availability      string             `json:"availability,omitempty"`
-	LatencyTargetMs   *int32             `json:"latencyTargetMs,omitempty"`
-	MaxMonthlyCostUSD *float64           `json:"maxMonthlyCostUSD,omitempty"`
-	SecurityTier      string             `json:"securityTier,omitempty"`
-	Autoscaling       *AutoscalingPolicy `json:"autoscaling,omitempty"`
+	// Availability defines the desired availability level for the service.
+	// It may map to internal SLO tiers such as "high", "medium", or "low".
+	// Higher availability may increase cost due to redundancy.
+	// Example: "high".
+	Availability string `json:"availability,omitempty"`
+
+	// LatencyTargetMs is the p99 latency budget for this service in milliseconds.
+	// The operator considers the AppIntent in violation when observed p99 latency
+	// exceeds this value. Lower values enforce stricter performance requirements.
+	// Typical values: 50–500. Example: 100.
+	LatencyTargetMs *int32 `json:"latencyTargetMs,omitempty"`
+
+	// MaxMonthlyCostUSD is the maximum allowed monthly cost for running this service in USD.
+	// If the estimated cost exceeds this value, the operator may take corrective actions
+	// such as scaling down resources or adjusting configurations.
+	// Typical values: 10–1000. Example: 200.
+	MaxMonthlyCostUSD *float64 `json:"maxMonthlyCostUSD,omitempty"`
+
+	// SecurityTier defines the desired security posture for the service.
+	// It may correspond to predefined levels such as "standard", "hardened", or "restricted".
+	// Higher tiers may enforce stricter policies and increase operational overhead.
+	// Example: "restricted".
+	SecurityTier string `json:"securityTier,omitempty"`
+
+	// Autoscaling defines the autoscaling behavior and limits for the service.
+	// When enabled, the system automatically adjusts replica counts based on load.
+	// If not specified, autoscaling behavior defaults to system or runtime profile settings.
+	Autoscaling *AutoscalingPolicy `json:"autoscaling,omitempty"`
 }
 
 type AppIntentSpec struct {
